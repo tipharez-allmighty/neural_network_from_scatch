@@ -10,8 +10,13 @@ class DenseLayer:
         self.weights = 0.01 * np.random.randn(n_inputs,n_neurons)
         self.biases = np.zeros((1,n_neurons))
     
-    def forward(self, inputs: np.ndarray) -> np.ndarray:
+    def forward(self, inputs: np.ndarray) -> None:
         self.output = np.dot(inputs, self.weights) + self.biases
+        self.inputs = inputs
+    
+    def backward(self, dvalues):
+        self.dinputs = dvalues.copy()
+        self.dinputs[self.inputs <= 0] = 0
         
 class ActivationReLU:
     
@@ -20,10 +25,11 @@ class ActivationReLU:
         
 class ActivationSoftmax:
     
-     def forward(self, inputs: np.ndarray) -> None:
-         exp_max_input = np.exp(inputs - np.max(inputs, axis=1,keepdims=True))
-         sum_input = np.sum(exp_max_input, axis=1, keepdims=True)
-         self.output = exp_max_input/sum_input
+    def forward(self, inputs: np.ndarray) -> None:
+        exp_max_input = np.exp(inputs - np.max(inputs, axis=1,keepdims=True))
+        sum_input = np.sum(exp_max_input, axis=1, keepdims=True)
+        self.output = exp_max_input/sum_input
+
 
 class Loss:
     
@@ -42,6 +48,15 @@ class CategoricalCrossEntropy(Loss):
             confidences = np.sum(y_pred_clip*y_true, axis=1)
         
         return -np.log(confidences)
+
+def accuracy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
+    
+    predictions = np.argmax(y_pred, axis=1)
+    
+    if len(y_true.shape) == 2:
+        y_true = np.argmax(y_true, axis=1)
+    
+    return np.mean(predictions==y_true)
     
 X, y = spiral_data(samples=100,classes=3)
 
@@ -57,4 +72,6 @@ print(activation2.output)
 
 loss = CategoricalCrossEntropy()
 
-print(loss.calculate(activation2.output, y ))
+print(loss.calculate(activation2.output, y))
+
+print(accuracy(activation2.output, y))
